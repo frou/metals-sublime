@@ -8,7 +8,7 @@ from LSP.plugin import AbstractPlugin
 from LSP.plugin import ClientConfig
 from LSP.plugin import Request as LspRequest
 from LSP.plugin import WorkspaceFolder
-from LSP.plugin.core.protocol import Position
+from LSP.plugin.core.protocol import Position, Response
 from LSP.plugin.core.typing import Optional, Any, List
 from LSP.plugin.core.views import first_selection_region
 from LSP.plugin.core.views import Point
@@ -25,6 +25,7 @@ _LATEST_STABLE = "latest-stable"
 _LATEST_SNAPSHOT = "latest-snapshot"
 _LATEST_STABLE_ARTIFACT = "latest.stable"
 
+_SETTINGS_BASENAME = "LSP-metals.sublime-settings"
 
 class Metals(AbstractPlugin):
 
@@ -43,7 +44,7 @@ class Metals(AbstractPlugin):
         if not workspace_folders:
             return "No workspace detected. Try opening your project at the workspace root."
 
-        plugin_settings = sublime.load_settings("LSP-metals.sublime-settings")
+        plugin_settings = sublime.load_settings(_SETTINGS_BASENAME)
         java_path = get_java_path(plugin_settings)
         if not java_path :
             return "Please install java or set the 'java_home' setting"
@@ -84,6 +85,16 @@ class Metals(AbstractPlugin):
                 point = point_to_offset(Point.from_lsp(position), view)
                 if region.contains(point):
                     request.params['range'] = region_to_range(view, region)
+
+    def on_server_response_async(self, method: str, response: Response) -> None:
+        if method == "textDocument/completion" and sublime.load_settings(_SETTINGS_BASENAME).get("rationalise_completions", False):
+            for item in response.result['items']:
+                label = item['label'].strip()
+                detail = item['detail'].strip()
+                if label.endswith(detail):
+                    item['label'] = label[:-len(detail)] or label
+                if detail.startswith(": "):
+                    item['detail'] = detail[2:] or detail
 
     # notification and request handlers
 

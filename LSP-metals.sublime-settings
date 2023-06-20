@@ -6,6 +6,9 @@
   // Optional path to the Java home directory. Requires reloading sublime.
   "java_home": "",
 
+  // REF: https://github.com/scalameta/metals-feature-requests/issues/235#issuecomment-1597056684
+  "rationalise_completions": false,
+
   // Attach to views with base scope source.scala or source.java
   "selector": "source.scala, source.java",
 
