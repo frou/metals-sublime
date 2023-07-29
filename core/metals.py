@@ -1,24 +1,26 @@
-from . decorations import handle_decorations
-from . handle_execute_client import handle_execute_client
-from . handle_input_box import handle_input_box
-from . status import handle_status
-from .. commands.lsp_metals_text_command import LspMetalsTextCommand
+import json
+import os
 from distutils.version import LooseVersion
-from LSP.plugin import AbstractPlugin
-from LSP.plugin import ClientConfig
+from urllib.request import Request, urlopen
+
+import sublime
+from LSP.plugin import AbstractPlugin, ClientConfig
 from LSP.plugin import Request as LspRequest
 from LSP.plugin import WorkspaceFolder
 from LSP.plugin.core.protocol import Position, Response
-from LSP.plugin.core.typing import Optional, Any, List
-from LSP.plugin.core.views import first_selection_region
-from LSP.plugin.core.views import Point
-from LSP.plugin.core.views import point_to_offset
-from LSP.plugin.core.views import region_to_range
-from urllib.request import urlopen, Request
-import json
+from LSP.plugin.core.typing import Any, List, Optional
+from LSP.plugin.core.views import (
+    Point,
+    first_selection_region,
+    point_to_offset,
+    region_to_range,
+)
 
-import sublime
-import os
+from ..commands.lsp_metals_text_command import LspMetalsTextCommand
+from .decorations import handle_decorations
+from .handle_execute_client import handle_execute_client
+from .handle_input_box import handle_input_box
+from .status import handle_status
 
 _COURSIER_PATH = os.path.join(os.path.dirname(__file__), '..', 'coursier')
 _LATEST_STABLE = "latest-stable"
@@ -91,10 +93,30 @@ class Metals(AbstractPlugin):
             for item in response.result['items']:
                 label = item['label'].strip()
                 detail = item['detail'].strip()
+
                 if label.endswith(detail):
-                    item['label'] = label[:-len(detail)] or label
+                    label = label[:-len(detail)] or label
+                # @todo There can be more than 1 space? From ujson:
+                # "detail": " ujson",
+                # "filterText": "Js",
+                # "insertTextFormat": 2,
+                # "kind": 5,
+                # "label": "Js:  ujson",
+                #
+                # @todo There can be a " -" in the label
+                # detail: " com.dd.plist",
+                # filterText: "NSSet",
+                # insertTextFormat: 2,
+                # kind: 9,
+                # label: "NSSet - com.dd.plist",
+                if label.endswith(": "):
+                    label = detail[:-2] or label
+                item['label'] = label
+
                 if detail.startswith(": "):
-                    item['detail'] = detail[2:] or detail
+                    detail = detail[2:] or detail
+                item['detail'] = detail
+
 
     # notification and request handlers
 
