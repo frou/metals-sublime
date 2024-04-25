@@ -68,6 +68,18 @@ class Metals(AbstractPlugin):
         properties = prepare_server_properties(plugin_settings.get("server_properties"))
         command = create_launch_command(java_path, server_version, properties)
         configuration.command = command
+        # REF: https://lsp.sublimetext.io/customization/#semantic-highlighting
+        # REF(SEMANTIC_TOKENS_MAP): https://github.com/sublimelsp/LSP/blob/main/plugin/core/constants.py
+        configuration.semantic_tokens = {
+            "comment": None,
+            "string": None,
+            "keyword": None,
+            "variable": None,
+            "method": "support",
+            "enum": "storage", # case |F
+            # "enum.abstract": "entity", # enum |BooleanExpr:
+
+        }
         return None
 
     def on_pre_send_request_async(self, request_id: int, request: LspRequest) -> None:
